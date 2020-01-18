@@ -262,7 +262,10 @@ class Gui(Tkinter.Tk):
             self.terminateSearch("Arrived!")
         else:
             self.searchjob = self.after(1, step().next)
-        
+
+        #GHD: Save final canvas in file TODO: need to recheck
+        print("DONE DONE DONE!!")
+        self.vmap.postscript(file="MAPPATH.ps", colormode='color')
 
     def searchPause(self):
         """Button listener. Cancels after call to search generator, sets searchToggle"""

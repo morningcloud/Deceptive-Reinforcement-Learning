@@ -16,11 +16,19 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-AGENT_FILE = "agent_ds1"       #agent filename - must be in src/agents/
+#AGENT_FILE = "agent_ds1"       #agent filename - must be in src/agents/
+AGENT_FILE = "q_agent"       #agent filename - must be in src/agents/
 #AGENT_FILE = "agent_random"     #agent filename - must be in src/agents/
+MAP_FILE  = "arena2.map"   	#map filename - must be in maps (sister dir to src)
+START     = (30, 40)           #coordinates of start location in (col,row) format
+GOAL      = (8, 20)            #coordinates of goal location in (col,row) format
+POSS_GOALS = [(40, 5), (44, 41)]
+'''
 MAP_FILE  = "AR0044SR.map"   	#map filename - must be in maps (sister dir to src)
 START     = (350,122)           #coordinates of start location in (col,row) format
 GOAL      = (324,57)            #coordinates of goal location in (col,row) format
+POSS_GOALS = [(384,56),(220,161),(169,341),(410,424)]
+'''
 
 GUI = True                      #True = show GUI, False = run on command line
 SPEED = 0.0                     #delay between displayed moves in seconds
@@ -30,7 +38,6 @@ DIAGONAL = True                 #Only allows 4-way movement when False (default 
 FREE_TIME = 0.000               #Step times > FREE_TIME are timed iff REALTIME = True
 DYNAMIC = False                 #Implements runtime changes found in script.py when True
 STRICT = True                   #Allows traversal of impassable cells when False (default = True)
-PREPROCESS = False              #Gives agent opportunity to preprocess map (default = False)
+PREPROCESS = True              #Gives agent opportunity to preprocess map (default = False)
 #COST_MODEL = 'mixed_real'      #May be 'mixed' (default), 'mixed_real', 'mixed_opt1' or 'mixed_opt2'
 COST_FILE = "../costs/G1-W5-S10.cost"
-POSS_GOALS = [(384,56),(220,161),(169,341),(410,424)]

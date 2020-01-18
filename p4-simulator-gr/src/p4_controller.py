@@ -156,10 +156,12 @@ class SimController(object):
                 self.agent.preprocess(self.lmap)
             except AttributeError:
                 logging.warning("Agent doesn't support pre-processing.")
+                logging.error("Trace-back: \n {}".format(traceback.format_exc()))
             except:
                 # some other problem
                 logging.error("Pre-processing failed.")
                 logging.error("Trace-back: \n {}".format(traceback.format_exc()))
+        print("Pre-processing completed")
 
     def initAgent(self):
         # initialise agent - may throw BadAgentException
@@ -617,9 +619,25 @@ class SimController(object):
             # load or reload module
             agentmod = imp.load_source(agentfile, agentpath)
             # create Agent and pass in current config settings
-            self.agent = agentmod.Agent()
-            self.agent.reset()
+            #self.agent = agentmod.Agent()
+            #self.agent.reset()
+
             #TODO: replace this by passing as kwargs
+            #GHD: Resused logic to pass required parameters to agent
+            start = self.cfg["MAP_FILE"].rfind("/") + 1
+            map_name = self.cfg["MAP_FILE"][start:-4]
+            kwargs = {}
+
+            if agentfile == "q_agent":
+                kwargs = {"mapref": self.lmap,
+                          "real_goal": self.cfg["GOAL"],
+                          "fake_goals": self.cfg["POSS_GOALS"],
+                          "map_file": map_name,
+                          "start_position": self.cfg["START"]}
+
+            self.agent = agentmod.Agent(**kwargs)
+            self.agent.reset()
+
             try:
                 self.agent.setGoals(self.cfg["POSS_GOALS"])
             except:
