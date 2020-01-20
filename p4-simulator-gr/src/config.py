@@ -19,9 +19,9 @@
 #AGENT_FILE = "agent_ds1"       #agent filename - must be in src/agents/
 AGENT_FILE = "q_agent"       #agent filename - must be in src/agents/
 #AGENT_FILE = "agent_random"     #agent filename - must be in src/agents/
-MAP_FILE  = "arena2.map"   	#map filename - must be in maps (sister dir to src)
-START     = (30, 40)           #coordinates of start location in (col,row) format
-GOAL      = (8, 20)            #coordinates of goal location in (col,row) format
+MAP_FILE  = "arena.map"   	#map filename - must be in maps (sister dir to src)
+START     = (20, 45)           #coordinates of start location in (col,row) format
+GOAL      = (15, 5)            #coordinates of goal location in (col,row) format
 POSS_GOALS = [(40, 5), (44, 41)]
 '''
 MAP_FILE  = "AR0044SR.map"   	#map filename - must be in maps (sister dir to src)

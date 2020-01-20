@@ -11,14 +11,14 @@ from collections import Counter
 epsilon = 0.5  # HIGHER => MORE RANDOM / Exploration move
 LEARNING_RATE = 0.1
 FUTURE_DISCOUNT = 0.95
-EPOCS = 20000
+EPOCS = 8000
 START_EPSILON_DECAYING = 1
 END_EPSILON_DECAYING = EPOCS // 2  # stop decaying the epsilon
 epsilon_decaying_value = epsilon / (END_EPSILON_DECAYING-START_EPSILON_DECAYING)  # Decay rate
 
 SHOW_EVERY = 500
 SHOW_STATS = True
-STATS_EVERY = 10
+STATS_EVERY = 20
 DEBUGPRINT = False
 
 class Actions:
@@ -88,9 +88,9 @@ class Agent(object):
             print("loading qtable from file...")
             self.q_table = np.load(self.q_filepath)
             if self.q_table.any():
-                print("load success")
+                print("qtable load success")
             else:
-                print("load fail")
+                print("qtable load fail")
         else:
             print("going to train...")
             # Put random reward from -32 to 0, just to push the model learn faster... Is this a good idea??
@@ -110,18 +110,17 @@ class Agent(object):
         """returns random passable adjacent - agents are self-policing
         so must check cell passable from current in case of corner-cutting
         or may return invalid coord."""
-        #print("in getNext")
         if self.q_table.any():
             #print("getting based on qtable")
             bestaction = np.argmax(self.q_table[current])
             new_move = getCoordinateBasedOnAction(bestaction, current)
 
             # update q value for that specific action that we just took after taking the step
-            # IDEALLY WE SHOULD NOT DO THIS
-            max_future_q = np.max(self.q_table[new_move])
-            current_q = self.q_table[current + (bestaction,)]  # get 1 q value for this action
-            reward = action_reward = self.getStateReward(current, new_move)
-            new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + FUTURE_DISCOUNT * max_future_q)
+            # IDEALLY WE SHOULD NOT DO THIS, unless we still wanna learning while playing
+            #max_future_q = np.max(self.q_table[new_move])
+            #current_q = self.q_table[current + (bestaction,)]  # get 1 q value for this action
+            #reward = action_reward = self.getStateReward(current, new_move)
+            #new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + FUTURE_DISCOUNT * max_future_q)
             #self.q_table[current + (bestaction,)] = new_q
 
             if DEBUGPRINT: print("new_move",new_move,"current position",current,"bestaction",
@@ -140,7 +139,7 @@ class Agent(object):
         pass
 
     def train(self):
-        for epoc in range(EPOCS):
+        for epoc in range(EPOCS+1):
             episode_reward = 0
             done = False
             steps = 0
@@ -194,15 +193,15 @@ class Agent(object):
                 q_filepath = "qtables_temp/{self.map_file}-target{self.target_state}-episode-{epoc}-qtable.npy".format(**locals())
                 np.save(q_filepath, self.q_table)  # save qtable
 
+            self.stats.epoc_rewards.append(episode_reward)
             if SHOW_STATS:
-                self.stats.epoc_rewards.append(episode_reward)
                 if not epoc % STATS_EVERY:
                     self.stats.aggr_epocs_rewards['eps'].append(epoc)
+                    min_reward = min(self.stats.epoc_rewards[-STATS_EVERY:])
+                    max_reward = max(self.stats.epoc_rewards[-STATS_EVERY:])
                     avg_reward = sum(self.stats.epoc_rewards[-STATS_EVERY:]) / len(self.stats.epoc_rewards[-STATS_EVERY:])  #-STATS_EVERY: is picking the last x
                     self.stats.aggr_epocs_rewards['avg'].append(avg_reward)
-                    min_reward = min(self.stats.epoc_rewards[-STATS_EVERY:])
                     self.stats.aggr_epocs_rewards['min'].append(min_reward)
-                    max_reward = max(self.stats.epoc_rewards[-STATS_EVERY:])
                     self.stats.aggr_epocs_rewards['max'].append(max_reward)
                     print("episode: {epoc}, avg: {avg_reward}, min: {min_reward}, max: {max_reward}".format(**locals()))
 
@@ -225,10 +224,10 @@ class Agent(object):
             plt.grid(True)
             #plt.show()
             print("saving chart")
-            chart_filepath = "qtable_charts/{self.map_file}-target{self.target_state}-trainhist.png".format(**locals())
+            chart_filepath = "qtable_charts/{self.map_file}-target{self.target_state}-trainhist-{epoc}EPOCS.png".format(**locals())
             plt.savefig(chart_filepath)
             print("saving done")
-            plt.clf()
+            #plt.clf()
             print("clearing chart done")
 
     def simulate_environment_step(self, current_state, action, steps):
