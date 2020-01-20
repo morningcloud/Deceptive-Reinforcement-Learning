@@ -19,7 +19,7 @@ epsilon_decaying_value = epsilon / (END_EPSILON_DECAYING-START_EPSILON_DECAYING)
 SHOW_EVERY = 500
 SHOW_STATS = True
 STATS_EVERY = 20
-DEBUGPRINT = False
+DEBUGPRINT = True
 
 class Actions:
     NORTH = 0
@@ -61,6 +61,7 @@ class Agent(object):
         self.stats = Stats()
         self.current_state = start_position
         self.target_state = real_goal
+        self.fake_goals = fake_goals
         self.mapref = mapref  # this will be None during initialization
         self.map_file = map_file
         self.q_filepath = "qtables/{map_file}-{self.target_state}-qtable.npy".format(**locals())
@@ -84,11 +85,16 @@ class Agent(object):
 
         self.mapref = mapref
         print("q_filepath:", self.q_filepath)
+
+        #dictionary to maintain all qtables
+        self.q_table_dic = {}
+
         if os.path.isfile(self.q_filepath):
             print("loading qtable from file...")
             self.q_table = np.load(self.q_filepath)
             if self.q_table.any():
                 print("qtable load success")
+                self.q_table_dic[self.target_state] = self.q_table
             else:
                 print("qtable load fail")
         else:
@@ -103,10 +109,49 @@ class Agent(object):
                     if not mapref.isPassable((x, y)):
                         self.q_table[(x, y)] = [-np.inf for _ in Actions.ACTIONOFFSET]
 
+            self.train_target_state = self.target_state
+            self.q_filepath = "qtables/{self.map_file}-{self.train_target_state}-qtable.npy".format(**locals())
             self.train()
 
+        for fakegoal in self.fake_goals:
+            print("load/Training on fake goal {fakegoal}".format(**locals()))
+
+            self.train_target_state = fakegoal
+            q_filepath = "qtables/{self.map_file}-{fakegoal}-qtable.npy".format(**locals())
+
+            if os.path.isfile(q_filepath):
+                print("loading qtable from file...",q_filepath)
+                self.q_table = np.load(q_filepath)
+                if self.q_table.any():
+                    print("qtable load success")
+                    self.q_table_dic[fakegoal] = self.q_table
+                else:
+                    print("qtable load fail")
+            else:
+                print("going to train...",q_filepath)
+                # Put random reward from -32 to 0, just to push the model learn faster... Is this a good idea??
+                self.q_table = np.random.uniform(low=-32, high=0,
+                                                 size=(self.observation_size + [len(Actions.ACTIONOFFSET)]))
+
+
+                # set q_value to -info on unpassable positions
+                for x in range(mapref.width):
+                    for y in range(mapref.height):
+                        if not mapref.isPassable((x, y)):
+                            self.q_table[(x, y)] = [-np.inf for _ in Actions.ACTIONOFFSET]
+
+                self.train_target_state = fakegoal
+                self.q_filepath = "qtables/{self.map_file}-{self.train_target_state}-qtable.npy".format(**locals())
+                self.train()
+                self.q_table_dic[fakegoal] = self.q_table
+                #GOAL      = (15, 8)            #coordinates of goal location in (col,row) format
+                #POSS_GOALS = [(40, 5), (44, 41)]
+
+        #self.q_table=self.q_table_dic[(44, 41)]
+        print("len self.q_table_dic: ",len(self.q_table_dic))
+
     '''returns the next move'''
-    def getNext(self, mapref, current, goal, timeremaining):
+    def getNext__(self, mapref, current, goal, timeremaining):
         """returns random passable adjacent - agents are self-policing
         so must check cell passable from current in case of corner-cutting
         or may return invalid coord."""
@@ -133,6 +178,62 @@ class Agent(object):
             adjacents = mapref.getAdjacents(current)
             possible_move = [a for a in adjacents if mapref.isPassable(a,current)]
             return np.random.choice(possible_move)
+
+    '''returns the next move'''
+    def getNext(self, mapref, current, goal, timeremaining):
+        """returns random passable adjacent - agents are self-policing
+        so must check cell passable from current in case of corner-cutting
+        or may return invalid coord."""
+        print("In getNext")
+
+        #if self.q_table.any():
+        #print("getting based on qtable")
+        bestaction, bestqval = self.getNextAction(current) # np.argmax(self.q_table[current])
+        #print("bestaction",bestaction)
+        new_move = getCoordinateBasedOnAction(bestaction, current)
+
+        # update q value for that specific action that we just took after taking the step
+        # IDEALLY WE SHOULD NOT DO THIS, unless we still wanna learning while playing
+        #max_future_q = np.max(self.q_table[new_move])
+        #current_q = self.q_table[current + (bestaction,)]  # get 1 q value for this action
+        #reward = action_reward = self.getStateReward(current, new_move)
+        #new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + FUTURE_DISCOUNT * max_future_q)
+        #self.q_table[current + (bestaction,)] = new_q
+
+        if DEBUGPRINT:
+            print("new_move",new_move,"current position",current,"bestaction",
+              bestaction,'qval', bestqval,
+              "isPassable",mapref.isPassable(new_move,current))
+
+        return new_move
+        '''else:
+            print("get random!")
+            adjacents = mapref.getAdjacents(current)
+            possible_move = [a for a in adjacents if mapref.isPassable(a,current)]
+            return np.random.choice(possible_move)
+        '''
+
+    def getNextAction(self, current):
+        #print("in getNextAction")
+        actionQ = []
+
+        for a in range(len(Actions.ACTIONOFFSET)):
+            qvals = []
+            #print("calculating average of action",a)
+            for q in self.q_table_dic.values():
+                #print("in dict iteration")
+                qvals.append( q[current + (a,)])
+
+            avg = sum(qvals)/len(qvals)
+            #print("val=",avg)
+            actionQ.append(avg)
+
+        #print("actionQ", actionQ)
+        nextaction = np.argmax(actionQ)
+        #print("nextaction..",nextaction)
+        return nextaction, np.max(actionQ)
+
+
 
     '''the SimController will call if config settings change.'''
     def reset(self, **kwargs):
@@ -176,7 +277,7 @@ class Agent(object):
                     if (not new_q == -np.inf) and (not self.mapref.isPassable(new_discrete_state, discrete_state)):
                         print("taking invalid route!! new_q:",new_q)
 
-                elif new_discrete_state == self.target_state:
+                elif new_discrete_state == self.train_target_state:
                     print("Make it in episode {epoc}, in ".format(**locals()),len(step_action_log)," steps! randomaction:{randomaction}, epsilon={self.epsilon}".format(**locals()))
                     self.q_table[discrete_state + (action,)] = 0  # goal is reached update the reward as 0 for reaching the target
 
@@ -190,7 +291,7 @@ class Agent(object):
             if not epoc % SHOW_EVERY:  # same as if epoc % SHOW_EVERY == 0:
                 print("Epoc ",epoc, " completed. Steps done: ", steps)
 
-                q_filepath = "qtables_temp/{self.map_file}-target{self.target_state}-episode-{epoc}-qtable.npy".format(**locals())
+                q_filepath = "qtables_temp/{self.map_file}-target{self.train_target_state}-episode-{epoc}-qtable.npy".format(**locals())
                 np.save(q_filepath, self.q_table)  # save qtable
 
             self.stats.epoc_rewards.append(episode_reward)
@@ -224,7 +325,7 @@ class Agent(object):
             plt.grid(True)
             #plt.show()
             print("saving chart")
-            chart_filepath = "qtable_charts/{self.map_file}-target{self.target_state}-trainhist-{epoc}EPOCS.png".format(**locals())
+            chart_filepath = "qtable_charts/{self.map_file}-target{self.train_target_state}-trainhist-{epoc}EPOCS.png".format(**locals())
             plt.savefig(chart_filepath)
             print("saving done")
             #plt.clf()
@@ -253,7 +354,7 @@ class Agent(object):
         ###
 
         # if goal is reached or TODO deadline due
-        done = (new_state == self.target_state or steps >= 10000)
+        done = (new_state == self.train_target_state or steps >= 10000)
         return new_state, action_reward, done
 
     def getStateReward(self, current_state, new_state):
