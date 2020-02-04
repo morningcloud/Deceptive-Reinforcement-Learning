@@ -72,15 +72,21 @@ class Gui(Tkinter.Tk):
 
     def setGoal(self, goal):
         """draws cross at goal position"""
-        self.vmap.drawCross(goal, p4.COL_GOAL)
+        #self.vmap.drawCross(goal, p4.COL_GOAL)
         self.goal = goal  #position is saved, so it can be cleared
-        
+        #GHD: Incase multiple goals
+        if isinstance(goal, list):  # to test multi goal, just pick one for now.
+            for g in goal:
+                self.vmap.drawCross(g, p4.COL_GOAL)
+        else:
+            self.vmap.drawCross(goal, p4.COL_GOAL)
+
     def setPossGoals(self, goals):
         """draws and remembers extra goals"""
         try:
             self.possGoals = goals
             for g in goals:
-                self.vmap.drawCross(g, p4.COL_GOAL)
+                self.vmap.drawCross(g, p4.COL_POSSGOALS)
         except:
             pass
         

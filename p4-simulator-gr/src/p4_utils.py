@@ -38,7 +38,8 @@ COL_PP = "azure"     # proposed path
 COL_EX = "purple"    # extra set
 RESET = "reset"      # reset to current map data
 COL_START = "green"  # cross at start pos
-COL_GOAL = "tomato"  # cross at goal pos
+COL_GOAL = "red"  # cross at goal pos
+COL_POSSGOALS = "purple"  # cross at possible goal pos
 
 TIMER = "clock"      # default timer - may be clock or time
 #SQRT2 = sqrt(2)

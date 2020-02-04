@@ -6,20 +6,24 @@ import sys, traceback
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import math
 from collections import Counter
 
 epsilon = 0.5  # HIGHER => MORE RANDOM / Exploration move
 LEARNING_RATE = 0.1
 FUTURE_DISCOUNT = 0.95
-EPOCS = 8000
+EPOCS = 20000
 START_EPSILON_DECAYING = 1
 END_EPSILON_DECAYING = EPOCS // 2  # stop decaying the epsilon
 epsilon_decaying_value = epsilon / (END_EPSILON_DECAYING-START_EPSILON_DECAYING)  # Decay rate
+DECEPTION_LAMBDA = 0.001
 
 SHOW_EVERY = 500
 SHOW_STATS = True
 STATS_EVERY = 20
 DEBUGPRINT = True
+
+ENABLE_DECEPTION = False
 
 class Actions:
     NORTH = 0
@@ -60,7 +64,10 @@ class Agent(object):
         self.epsilon = epsilon
         self.stats = Stats()
         self.current_state = start_position
-        self.target_state = real_goal
+        if isinstance(real_goal, list):  # to test multi goal, just pick one for now.
+            self.target_state = real_goal[0]
+        else:
+            self.target_state = real_goal
         self.fake_goals = fake_goals
         self.mapref = mapref  # this will be None during initialization
         self.map_file = map_file
@@ -111,41 +118,43 @@ class Agent(object):
 
             self.train_target_state = self.target_state
             self.q_filepath = "qtables/{self.map_file}-{self.train_target_state}-qtable.npy".format(**locals())
-            self.train()
+            self.train(self.fake_goals)
+            self.q_table_dic[self.target_state] = self.q_table
 
-        for fakegoal in self.fake_goals:
-            print("load/Training on fake goal {fakegoal}".format(**locals()))
-
-            self.train_target_state = fakegoal
-            q_filepath = "qtables/{self.map_file}-{fakegoal}-qtable.npy".format(**locals())
-
-            if os.path.isfile(q_filepath):
-                print("loading qtable from file...",q_filepath)
-                self.q_table = np.load(q_filepath)
-                if self.q_table.any():
-                    print("qtable load success")
-                    self.q_table_dic[fakegoal] = self.q_table
-                else:
-                    print("qtable load fail")
-            else:
-                print("going to train...",q_filepath)
-                # Put random reward from -32 to 0, just to push the model learn faster... Is this a good idea??
-                self.q_table = np.random.uniform(low=-32, high=0,
-                                                 size=(self.observation_size + [len(Actions.ACTIONOFFSET)]))
-
-
-                # set q_value to -info on unpassable positions
-                for x in range(mapref.width):
-                    for y in range(mapref.height):
-                        if not mapref.isPassable((x, y)):
-                            self.q_table[(x, y)] = [-np.inf for _ in Actions.ACTIONOFFSET]
+        if ENABLE_DECEPTION:
+            for fakegoal in self.fake_goals:
+                print("load/Training on fake goal {fakegoal}".format(**locals()))
 
                 self.train_target_state = fakegoal
-                self.q_filepath = "qtables/{self.map_file}-{self.train_target_state}-qtable.npy".format(**locals())
-                self.train()
-                self.q_table_dic[fakegoal] = self.q_table
-                #GOAL      = (15, 8)            #coordinates of goal location in (col,row) format
-                #POSS_GOALS = [(40, 5), (44, 41)]
+                q_filepath = "qtables/{self.map_file}-{fakegoal}-qtable.npy".format(**locals())
+
+                if os.path.isfile(q_filepath):
+                    print("loading qtable from file...",q_filepath)
+                    self.q_table = np.load(q_filepath)
+                    if self.q_table.any():
+                        print("qtable load success")
+                        self.q_table_dic[fakegoal] = self.q_table
+                    else:
+                        print("qtable load fail")
+                else:
+                    print("going to train...",q_filepath)
+                    # Put random reward from -32 to 0, just to push the model learn faster... Is this a good idea??
+                    self.q_table = np.random.uniform(low=-32, high=0,
+                                                     size=(self.observation_size + [len(Actions.ACTIONOFFSET)]))
+
+
+                    # set q_value to -info on unpassable positions
+                    for x in range(mapref.width):
+                        for y in range(mapref.height):
+                            if not mapref.isPassable((x, y)):
+                                self.q_table[(x, y)] = [-np.inf for _ in Actions.ACTIONOFFSET]
+
+                    self.train_target_state = fakegoal
+                    self.q_filepath = "qtables/{self.map_file}-{self.train_target_state}-qtable.npy".format(**locals())
+                    self.train()
+                    self.q_table_dic[fakegoal] = self.q_table
+                    #GOAL      = (15, 8)            #coordinates of goal location in (col,row) format
+                    #POSS_GOALS = [(40, 5), (44, 41)]
 
         #self.q_table=self.q_table_dic[(44, 41)]
         print("len self.q_table_dic: ",len(self.q_table_dic))
@@ -186,32 +195,37 @@ class Agent(object):
         or may return invalid coord."""
         print("In getNext")
 
-        #if self.q_table.any():
-        #print("getting based on qtable")
-        bestaction, bestqval = self.getNextAction(current) # np.argmax(self.q_table[current])
-        #print("bestaction",bestaction)
-        new_move = getCoordinateBasedOnAction(bestaction, current)
+        if ENABLE_DECEPTION:
+            bestaction, bestqval = self.getNextAction(current) # np.argmax(self.q_table[current])
+            #print("bestaction",bestaction)
+            new_move = getCoordinateBasedOnAction(bestaction, current)
+            return new_move
+        else:
+            q_table = self.q_table_dic[self.target_state]
+            if q_table.any():
+                #print("getting based on qtable")
+                bestaction = np.argmax(q_table[current])
+                new_move = getCoordinateBasedOnAction(bestaction, current)
 
-        # update q value for that specific action that we just took after taking the step
-        # IDEALLY WE SHOULD NOT DO THIS, unless we still wanna learning while playing
-        #max_future_q = np.max(self.q_table[new_move])
-        #current_q = self.q_table[current + (bestaction,)]  # get 1 q value for this action
-        #reward = action_reward = self.getStateReward(current, new_move)
-        #new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + FUTURE_DISCOUNT * max_future_q)
-        #self.q_table[current + (bestaction,)] = new_q
+                # update q value for that specific action that we just took after taking the step
+                # IDEALLY WE SHOULD NOT DO THIS, unless we still wanna learning while playing
+                #max_future_q = np.max(self.q_table[new_move])
+                #current_q = self.q_table[current + (bestaction,)]  # get 1 q value for this action
+                #reward = action_reward = self.getStateReward(current, new_move)
+                #new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + FUTURE_DISCOUNT * max_future_q)
+                #self.q_table[current + (bestaction,)] = new_q
 
-        if DEBUGPRINT:
-            print("new_move",new_move,"current position",current,"bestaction",
-              bestaction,'qval', bestqval,
-              "isPassable",mapref.isPassable(new_move,current))
+                if DEBUGPRINT: print("new_move",new_move,"current position",current,"bestaction",
+                      bestaction, 'qval', q_table[current + (bestaction, )],
+                      "isPassable", mapref.isPassable(new_move, current))
 
-        return new_move
-        '''else:
-            print("get random!")
-            adjacents = mapref.getAdjacents(current)
-            possible_move = [a for a in adjacents if mapref.isPassable(a,current)]
-            return np.random.choice(possible_move)
-        '''
+                return new_move
+            else:
+                print("get random!")
+                adjacents = mapref.getAdjacents(current)
+                possible_move = [a for a in adjacents if mapref.isPassable(a,current)]
+                return np.random.choice(possible_move)
+
 
     def getNextAction(self, current):
         #print("in getNextAction")
@@ -239,7 +253,7 @@ class Agent(object):
     def reset(self, **kwargs):
         pass
 
-    def train(self):
+    def train(self, fake_goals=None):
         for epoc in range(EPOCS+1):
             episode_reward = 0
             done = False
@@ -267,7 +281,21 @@ class Agent(object):
                     max_future_q = np.max(self.q_table[new_discrete_state])
                     current_q = self.q_table[discrete_state + (action, )]  #get 1 q value for this action
 
-                    new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * (reward + FUTURE_DISCOUNT * max_future_q)
+                    fcosts = []
+                    if fake_goals:
+                        for fg in fake_goals:
+                            fcost = self.euclidean(fg, new_discrete_state)
+                            fcosts.append(fcost)
+                            #print('fake cost', fg, new_discrete_state, fcost)
+
+                    tcost = self.euclidean(self.train_target_state, new_discrete_state)
+                    #print('true cost', self.train_target_state, new_discrete_state, tcost)
+
+                    v = reward + FUTURE_DISCOUNT * (max_future_q + DECEPTION_LAMBDA * (-sum(fcosts) + len(fcosts) * tcost))
+                    #v1 = reward + FUTURE_DISCOUNT * max_future_q
+                    #print('new v', v, 'origninal v', v1)
+
+                    new_q = (1 - LEARNING_RATE) * current_q + LEARNING_RATE * v
 
                     self.q_table[discrete_state + (action,)] = new_q  # update q value for that specific action that we just took after taking the step
 
@@ -306,30 +334,34 @@ class Agent(object):
                     self.stats.aggr_epocs_rewards['max'].append(max_reward)
                     print("episode: {epoc}, avg: {avg_reward}, min: {min_reward}, max: {max_reward}".format(**locals()))
 
+        '''
         # this should be the same path in the actual run
         import json
         json=json.dumps(step_action_log)
-        f=open('qtables/hist.txt','w')
+        f=open('qtables/hist.txt', 'w')
         f.write(json)
         f.close()
-
+        '''
         #save last q values
         np.save(self.q_filepath, self.q_table)  # save qtable
 
         if SHOW_STATS:
-            print("plotting chart")
-            plt.plot(self.stats.aggr_epocs_rewards['eps'], self.stats.aggr_epocs_rewards['avg'], label='avg')
-            plt.plot(self.stats.aggr_epocs_rewards['eps'], self.stats.aggr_epocs_rewards['min'], label='min')
-            plt.plot(self.stats.aggr_epocs_rewards['eps'], self.stats.aggr_epocs_rewards['max'], label='max')
-            plt.legend(loc=4)  # 4= lower right
-            plt.grid(True)
-            #plt.show()
-            print("saving chart")
-            chart_filepath = "qtable_charts/{self.map_file}-target{self.train_target_state}-trainhist-{epoc}EPOCS.png".format(**locals())
-            plt.savefig(chart_filepath)
-            print("saving done")
-            #plt.clf()
-            print("clearing chart done")
+            self.plot_training()
+
+    def plot_training(self):
+        plt.plot(self.stats.aggr_epocs_rewards['eps'], self.stats.aggr_epocs_rewards['avg'], label='avg')
+        plt.plot(self.stats.aggr_epocs_rewards['eps'], self.stats.aggr_epocs_rewards['min'], label='min')
+        plt.plot(self.stats.aggr_epocs_rewards['eps'], self.stats.aggr_epocs_rewards['max'], label='max')
+        plt.legend(loc=4)  # 4= lower right
+        plt.grid(True)
+        #plt.show()
+        e = EPOCS
+        print("saving chart",e)
+        chart_filepath = "qtable_charts/{self.map_file}-target{self.train_target_state}-trainhist-{e}EPOCS.png".format(**locals())
+        plt.savefig(chart_filepath)
+        #print("saving done")
+        plt.clf()
+        #print("clearing chart done")
 
     def simulate_environment_step(self, current_state, action, steps):
         x, y = current_state
@@ -362,6 +394,14 @@ class Agent(object):
         # for now the reward is to reduce action cost
         action_reward = - action_cost
         return action_reward
+
+
+    def euclidean(self, start, goal):
+        x1, y1 = start
+        x2, y2 = goal
+
+        dist = math.sqrt((x2-x1) ** 2 + (y2-y1) ** 2)
+        return dist
 
 
 def getCoordinateBasedOnAction(action, current):
