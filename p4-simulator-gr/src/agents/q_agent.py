@@ -7,16 +7,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import math
+
+import matplotlib
+matplotlib.use("TkAgg")
 from collections import Counter
 
+#epsilon = 0.99  # HIGHER => MORE RANDOM / Exploration move
 epsilon = 0.5  # HIGHER => MORE RANDOM / Exploration move
 LEARNING_RATE = 0.1
 FUTURE_DISCOUNT = 0.95
-EPOCS = 100000
+EPOCS = 24000
 START_EPSILON_DECAYING = 1
-END_EPSILON_DECAYING = EPOCS // 2  # stop decaying the epsilon
+END_EPSILON_DECAYING = EPOCS // 2  # stop decaying the epsilon on the last 10% of records
+#END_EPSILON_DECAYING = EPOCS * 0.1  # stop decaying the epsilon on the last 10% of records
 epsilon_decaying_value = epsilon / (END_EPSILON_DECAYING-START_EPSILON_DECAYING)  # Decay rate
-DECEPTION_LAMBDA = 0 #0.001
+DECEPTION_LAMBDA = 0.05
 
 SHOW_EVERY = 1000
 SHOW_STATS = True
@@ -24,6 +29,9 @@ STATS_EVERY = 20
 DEBUGPRINT = False
 
 ENABLE_DECEPTION = False
+#RESUME_TRAINING = False
+RESUME_TRAINING = False
+RESUME_EPOC_FROM = 20000
 
 class Actions:
     NORTH = 0
@@ -73,7 +81,11 @@ class Agent(object):
         self.map_file = map_file
         self.dec_lambda = DECEPTION_LAMBDA
         self.epocs = EPOCS
-        self.q_filepath = "qtables/{map_file}-target{self.target_state}-episode-{self.epocs}-l{self.dec_lambda}-qtable.npy".format(**locals())
+        self.resume_epoc = RESUME_EPOC_FROM
+        self.epsilon = epsilon
+        self.init_epsilon = epsilon
+        self.learning_rate = LEARNING_RATE
+        self.q_filepath = "qtables/{map_file}-target{self.target_state}-episode{self.epocs}-epsilon{self.init_epsilon}-LR{self.learning_rate}-lambda{self.dec_lambda}-qtable.npy".format(**locals())
 
     def getPossibleActions(self, current_coord):
         adjacentlist = self.mapref.getAdjacents(current_coord)
@@ -97,16 +109,24 @@ class Agent(object):
 
         #dictionary to maintain all qtables
         self.q_table_dic = {}
+        if RESUME_TRAINING:
+            # look for a saved qtable file from temp with the episode {resume_epoc} and
+            q_filepath = "qtables_temp/{self.map_file}-target{self.target_state}-episode{self.resume_epoc}" \
+                              "-epsilon{self.init_epsilon}-LR{self.learning_rate}-lambda{self.dec_lambda}-qtable.npy"\
+                              .format(**locals())
+        else:
+            q_filepath = self.q_filepath
 
-        if os.path.isfile(self.q_filepath):
+        if os.path.isfile(q_filepath):
             print("loading qtable from file...")
-            self.q_table = np.load(self.q_filepath)
+            self.q_table = np.load(q_filepath)
             if self.q_table.any():
                 print("qtable load success")
                 self.q_table_dic[self.target_state] = self.q_table
             else:
                 print("qtable load fail")
-        else:
+
+        if RESUME_TRAINING or not os.path.isfile(self.q_filepath):
             print("going to train...")
             # Put random reward from -32 to 0, just to push the model learn faster... Is this a good idea??
             self.q_table = np.random.uniform(low=-32, high=0,
@@ -119,7 +139,7 @@ class Agent(object):
                         self.q_table[(x, y)] = [-np.inf for _ in Actions.ACTIONOFFSET]
 
             self.train_target_state = self.target_state
-            self.q_filepath = "qtables/{self.map_file}-target{self.train_target_state}-episode-{self.epocs}-l{self.dec_lambda}-qtable.npy".format(**locals())
+            self.q_filepath = "qtables/{self.map_file}-target{self.train_target_state}-episode{self.epocs}-epsilon{self.init_epsilon}-LR{self.learning_rate}-lambda{self.dec_lambda}-qtable.npy".format(**locals())
             self.train(self.fake_goals)
             self.q_table_dic[self.target_state] = self.q_table
 
@@ -128,7 +148,7 @@ class Agent(object):
                 print("load/Training on fake goal {fakegoal}".format(**locals()))
 
                 self.train_target_state = fakegoal
-                q_filepath = "qtables/{self.map_file}-target{fakegoal}-episode-{self.epocs}-l{self.dec_lambda}-qtable.npy".format(**locals())
+                q_filepath = "qtables/{self.map_file}-target{fakegoal}-episode{self.epocs}-epsilon{self.init_epsilon}-LR{self.learning_rate}-lambda{self.dec_lambda}-qtable.npy".format(**locals())
 
                 if os.path.isfile(q_filepath):
                     print("loading qtable from file...",q_filepath)
@@ -152,7 +172,7 @@ class Agent(object):
                                 self.q_table[(x, y)] = [-np.inf for _ in Actions.ACTIONOFFSET]
 
                     self.train_target_state = fakegoal
-                    self.q_filepath = "qtables/{self.map_file}-target{self.train_target_state}-episode-{self.epocs}-l{self.dec_lambda}-qtable.npy".format(**locals())
+                    self.q_filepath = "qtables/{self.map_file}-target{self.train_target_state}-episode{self.epocs}-epsilon{self.init_epsilon}-LR{self.learning_rate}-lambda{self.dec_lambda}-qtable.npy".format(**locals())
                     self.train()
                     self.q_table_dic[fakegoal] = self.q_table
                     #GOAL      = (15, 8)            #coordinates of goal location in (col,row) format
@@ -256,7 +276,7 @@ class Agent(object):
         pass
 
     def train(self, fake_goals=None):
-        for epoc in range(EPOCS+1):
+        for epoc in range(self.resume_epoc, EPOCS+1):
             episode_reward = 0
             done = False
             steps = 0
@@ -293,7 +313,7 @@ class Agent(object):
                     tcost = self.euclidean(self.train_target_state, new_discrete_state)
                     #print('true cost', self.train_target_state, new_discrete_state, tcost)
 
-                    v = reward + FUTURE_DISCOUNT * (max_future_q + self.dec_lambda * (-sum(fcosts) + len(fcosts) * tcost))
+                    v = reward + FUTURE_DISCOUNT * (max_future_q + self.dec_lambda * (-sum(fcosts)/len(fcosts) + tcost))
                     #v1 = reward + FUTURE_DISCOUNT * max_future_q
                     #print('new v', v, 'origninal v', v1)
 
@@ -309,7 +329,7 @@ class Agent(object):
 
                 elif new_discrete_state == self.train_target_state:
                     if DEBUGPRINT:
-                        print("Make it in episode {epoc}, in ".format(**locals()),len(step_action_log)," steps! randomaction:{randomaction}, epsilon={self.epsilon}".format(**locals()))
+                        print("Make it in episode {epoc}, in ".format(**locals()),len(step_action_log)," steps! randomaction:{randomaction}, epsilon={self.init_epsilon}".format(**locals()))
                     self.q_table[discrete_state + (action,)] = 0  # goal is reached update the reward as 0 for reaching the target
 
                 discrete_state = new_discrete_state
@@ -322,7 +342,7 @@ class Agent(object):
             if not epoc % SHOW_EVERY:  # same as if epoc % SHOW_EVERY == 0:
                 print("Epoc ",epoc, " completed. Steps done: ", steps)
 
-                q_filepath = "qtables_temp/{self.map_file}-target{self.train_target_state}-episode-{epoc}-l{self.dec_lambda}-qtable.npy".format(**locals())
+                q_filepath = "qtables_temp/{self.map_file}-target{self.train_target_state}-episode{epoc}-epsilon{self.init_epsilon}-LR{self.learning_rate}-lambda{self.dec_lambda}-qtable.npy".format(**locals())
                 np.save(q_filepath, self.q_table)  # save qtable
 
             self.stats.epoc_rewards.append(episode_reward)
@@ -336,7 +356,8 @@ class Agent(object):
                     self.stats.aggr_epocs_rewards['min'].append(min_reward)
                     self.stats.aggr_epocs_rewards['max'].append(max_reward)
                     print("episode: {epoc}, avg: {avg_reward}, min: {min_reward}, max: {max_reward}".format(**locals()))
-
+                if not epoc % SHOW_EVERY:
+                    self.plot_training()
         '''
         # this should be the same path in the actual run
         import json
@@ -358,8 +379,8 @@ class Agent(object):
         plt.legend(loc=4)  # 4= lower right
         plt.grid(True)
         #plt.show()
-        print("saving chart",self.epocs)
-        chart_filepath = "qtable_charts/{self.map_file}-target{self.train_target_state}-l{self.dec_lambda}-trainhist-{self.epocs}EPOCS.png".format(**locals())
+        print("saving chart", self.epocs)
+        chart_filepath = "qtable_charts/{self.map_file}-target{self.train_target_state}-trainhist_episodes{self.epocs}-epsilon{self.init_epsilon}-LR{self.learning_rate}-lambda{self.dec_lambda}.png".format(**locals())
         plt.savefig(chart_filepath)
         #print("saving done")
         plt.clf()

@@ -19,6 +19,7 @@
 #AGENT_FILE = "agent_ds1"       #agent filename - must be in src/agents/
 AGENT_FILE = "q_agent"       #agent filename - must be in src/agents/
 #AGENT_FILE = "agent_random"     #agent filename - must be in src/agents/
+'''
 MAP_FILE   = "simple_arena.map"   	#map filename - must be in maps (sister dir to src)
 START     = (45, 4)           #coordinates of start location in (col,row) format
 GOAL      = (4, 45)            #coordinates of goal location in (col,row) format
@@ -28,7 +29,7 @@ MAP_FILE   = "tinymap.map"   	#map filename - must be in maps (sister dir to src
 START     = (13, 4)           #coordinates of start location in (col,row) format
 GOAL      = (4, 13)            #coordinates of goal location in (col,row) format
 POSS_GOALS = [(4, 4), (4, 8)]
-'''
+
 '''
 START      = (4, 4)           #coordinates of start location in (col,row) format
 GOAL       = (4, 45)            #coordinates of goal location in (col,row) format
