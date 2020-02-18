@@ -52,3 +52,12 @@ class Agent(object):
 
         return cost1 + cost2, path1[1:] + path2[1:]
         
+
+    def getPath(self, mapref, start, goal):
+        path = [start]
+        current = start
+        while current != goal:
+            move = self.getNext(mapref, current, goal, 1000)
+            path.append(move)
+            current = move
+        return path

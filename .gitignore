@@ -1,0 +1,9 @@
+*.npy
+qtable_charts/
+qtables/
+qfunc/
+qtables_temp/
+qfunc1/
+reinforcement_pacman/
+*.ps
+

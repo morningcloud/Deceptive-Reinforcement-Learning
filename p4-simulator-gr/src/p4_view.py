@@ -22,6 +22,8 @@ from ttk import *  # overwrites gui with smoother components where available
 from tkFileDialog import askopenfilename
 import tkMessageBox
 
+import io
+from PIL import Image
 
 class Gui(Tkinter.Tk):
     """
@@ -56,6 +58,10 @@ class Gui(Tkinter.Tk):
     def setLmap(self, lmap):
         """sets lmap attribute in case of reset"""
         self.lmap = lmap
+
+    def setMapName(self, name):
+        print('SETTING MAP NAME TO ',name)
+        self.mapName = name
 
     def resetZoom(self):
         """sets zoom slider to zero"""
@@ -268,10 +274,16 @@ class Gui(Tkinter.Tk):
             self.terminateSearch("Arrived!")
         else:
             self.searchjob = self.after(1, step().next)
+        self.saveCanvas()
 
-        #GHD: Save final canvas in file TODO: need to recheck
-        print("DONE DONE DONE!!")
-        self.vmap.postscript(file="MAPPATH.ps", colormode='color')
+    #GHD: Save final canvas in file TODO: need to recheck
+    def saveCanvas(self):
+        filename = self.mapName + str(self.start) + str(self.goal) + str(self.possGoals)
+        print("Saving Canvas!!")
+        ps = self.vmap.postscript(file=filename+".ps", colormode='color')
+        print('ps',ps)
+        img = Image.open(io.BytesIO(ps.encode('utf-8')))
+        img.save(filename+'.jpg')
 
     def searchPause(self):
         """Button listener. Cancels after call to search generator, sets searchToggle"""

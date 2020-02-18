@@ -205,8 +205,8 @@ class SimController(object):
             # logging.info
             logging.info("Options read from configuration file: {}".format(out))
 
-            self.initAgent()
             self.processMap()
+            self.initAgent()
             logging.info("Starting agent pre-processing...")
             self.processPrefs()
             self.setStart(self.cfg.get("START"))
@@ -261,6 +261,8 @@ class SimController(object):
         self.gui.setStart(self.cfg["START"])
         self.gui.setGoal(self.cfg["GOAL"])
         self.gui.setPossGoals(self.cfg["POSS_GOALS"])
+        #GHD
+        self.gui.setMapName(self.cfg["MAP_FILE"])
         self.updateStatus("OK")
         self.gui.mainloop()
 
@@ -628,7 +630,10 @@ class SimController(object):
             map_name = self.cfg["MAP_FILE"][start:-4]
             kwargs = {}
 
-            if agentfile == "q_agent":
+            if agentfile in ["agent_drl","agent_drl_org","agent_drl_mid","agent_drl_policy"]:
+                kwargs = {"lmap": self.lmap, "real_goal": self.cfg["GOAL"],
+                        "fake_goals": self.cfg["POSS_GOALS"], "map_file": map_name}
+            else:
                 kwargs = {"mapref": self.lmap,
                           "real_goal": self.cfg["GOAL"],
                           "fake_goals": self.cfg["POSS_GOALS"],

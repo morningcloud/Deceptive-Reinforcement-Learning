@@ -122,7 +122,7 @@ class MapCanvas(Canvas):
 
     def drawCross(self, coord, color):
         """Draws cross at coord in nominiated color"""
-        for n in range(-3, 3):
+        for n in range(-2, 3):
             self._drawPoint(color, (coord[0] + n, coord[1] + n))
             self._drawPoint(color, (coord[0] + n, coord[1] - n))
         self.zoomMap(self.scale)

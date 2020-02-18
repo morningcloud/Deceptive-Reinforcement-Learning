@@ -16,30 +16,101 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-#AGENT_FILE = "agent_ds1"       #agent filename - must be in src/agents/
-AGENT_FILE = "q_agent"       #agent filename - must be in src/agents/
-#AGENT_FILE = "agent_random"     #agent filename - must be in src/agents/
+#AGENT_FILE = "agent_drl"       #agent filename - must be in src/agents/
+#AGENT_FILE = "agent_drl_policy"       #agent filename - must be in src/agents/
+#AGENT_FILE = "agent_policyDP"
+#AGENT_FILE = "ac_agent"
+AGENT_FILE = "agent_drl_mid"
+# MAP_FILE  = "empty.map"   	#map filename - must be in maps (sister dir to src)
+# START     = (25, 11)           #coordinates of start location in (col,row) format
+# GOAL      = (28, 43)            #coordinates of goal location in (col,row) format
+# POSS_GOALS = [(10, 5), (39, 29), (8, 43)]
+
+# MAP_FILE  = "arena.map"   	#map filename - must be in maps (sister dir to src)
+# START     = (25, 11)           #coordinates of start location in (col,row) format
+# GOAL      = (28, 43)            #coordinates of goal location in (col,row) format
+# POSS_GOALS = [(10, 5), (39, 29), (8, 43)]
+
+
+#SETUP
 '''
-MAP_FILE   = "simple_arena.map"   	#map filename - must be in maps (sister dir to src)
-START     = (45, 4)           #coordinates of start location in (col,row) format
-GOAL      = (4, 45)            #coordinates of goal location in (col,row) format
-POSS_GOALS = [(4, 4), (4, 20)]
-'''
-MAP_FILE   = "tinymap.map"   	#map filename - must be in maps (sister dir to src)
-START     = (13, 4)           #coordinates of start location in (col,row) format
-GOAL      = (4, 13)            #coordinates of goal location in (col,row) format
-POSS_GOALS = [(4, 4), (4, 8)]
+#MAP_FILE  = "scatter.map"   	#map filename - must be in maps (sister dir to src)
+MAP_FILE  = "arena2.map"   	#map filename - must be in maps (sister dir to src)
+#MAP_FILE  = "clear.map"   	#map filename - must be in maps (sister dir to src)
+
+START = (9,9)	
+GOAL = (23,40)	
+POSS_GOALS = [(45,40),(3,40)]
+
+START = (36,9)	
+GOAL = (23,40)	
+POSS_GOALS = [(45,40),(3,40)]
+
+START = (20,41)	
+GOAL = (40,5)	
+POSS_GOALS = [(8,5),(32,11)]
+
+START = (40,3)	
+GOAL = (40,40)	
+POSS_GOALS = [(40,23),(7,40)]
+
+START = (18,7)	
+GOAL = (9,41)	
+POSS_GOALS = [(25,31),(47,32)]
+
+START = (8,29)	
+GOAL = (40,42)	
+POSS_GOALS = [(15,41),(34,21)]
+
+START = (5,10)	
+GOAL = (42,26)
+POSS_GOALS = [(5,27),(26,37)]
+
+
+START = (42,26)	
+GOAL = (5,10)	
+POSS_GOALS = [(5,27),(26,37)]
+
+START = (10,15)	
+GOAL = (42,37)	
+POSS_GOALS = [(9,36),(35,18)]
+
+START = (35,20)	
+GOAL = (5,43)	
+POSS_GOALS = [(42,37),(18,7)]
+
+START = (35,20)	
+GOAL = (5,43)	
+POSS_GOALS = [(5,35),(15,43)]
+#END OF SETUP
 
 '''
-START      = (4, 4)           #coordinates of start location in (col,row) format
-GOAL       = (4, 45)            #coordinates of goal location in (col,row) format
-POSS_GOALS = [(45, 4), (45, 45)]'''
+
+MAP_FILE  = "arena2.map"   	#map filename - must be in maps (sister dir to src)
+START = (20,41)
+GOAL = (40,5)
+POSS_GOALS = [(8,5),(32,10)]
 '''
-MAP_FILE  = "AR0044SR.map"   	#map filename - must be in maps (sister dir to src)
-START     = (350,122)           #coordinates of start location in (col,row) format
-GOAL      = (324,57)            #coordinates of goal location in (col,row) format
-POSS_GOALS = [(384,56),(220,161),(169,341),(410,424)]
+START     = (20, 41)           #coordinates of start location in (col,row) format
+GOAL      = (40, 5)            #coordinates of goal location in (col,row) format
+POSS_GOALS = [(8, 5), (40,25)]
 '''
+'''
+MAP_FILE   = "tinyblock.map"   	#map filename - must be in maps (sister dir to src)
+START     = (8, 3)           #coordinates of start location in (col,row) format
+GOAL      = (4, 13)            #coordinates of goal location in (col,row) format
+#POSS_GOALS = [(4, 4), (4, 8)]
+POSS_GOALS = [(13, 13), (1, 8)]
+'''
+# MAP_FILE  = "arena3.map"   	#map filename - must be in maps (sister dir to src)
+# START     = (22, 41)           #coordinates of start location in (col,row) format
+# GOAL      = (8, 5)            #coordinates of goal location in (col,row) format
+# POSS_GOALS = [(40, 5)]
+
+# MAP_FILE  = "empty.map"   	#map filename - must be in maps (sister dir to src)
+# START     = (20, 41)           #coordinates of start location in (col,row) format
+# GOAL      = (8, 5)            #coordinates of goal location in (col,row) format
+# POSS_GOALS = [(40, 5)]
 
 GUI = True                      #True = show GUI, False = run on command line
 SPEED = 0.0                     #delay between displayed moves in seconds
@@ -49,6 +120,6 @@ DIAGONAL = True                 #Only allows 4-way movement when False (default 
 FREE_TIME = 0.000               #Step times > FREE_TIME are timed iff REALTIME = True
 DYNAMIC = False                 #Implements runtime changes found in script.py when True
 STRICT = True                   #Allows traversal of impassable cells when False (default = True)
-PREPROCESS = True              #Gives agent opportunity to preprocess map (default = False)
+PREPROCESS = False              #Gives agent opportunity to preprocess map (default = False)
 #COST_MODEL = 'mixed_real'      #May be 'mixed' (default), 'mixed_real', 'mixed_opt1' or 'mixed_opt2'
 COST_FILE = "../costs/G1-W5-S10.cost"
