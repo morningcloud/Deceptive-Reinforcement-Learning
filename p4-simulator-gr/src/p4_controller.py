@@ -630,9 +630,13 @@ class SimController(object):
             map_name = self.cfg["MAP_FILE"][start:-4]
             kwargs = {}
 
-            if agentfile in ["agent_drl","agent_drl_org","agent_drl_mid","agent_drl_policy"]:
+            if agentfile in ["agent_drl","agent_drl_org","agent_drl_mid","agent_drl_policy","agent_drl_honest"]:
                 kwargs = {"lmap": self.lmap, "real_goal": self.cfg["GOAL"],
                         "fake_goals": self.cfg["POSS_GOALS"], "map_file": map_name}
+            elif agentfile in ["agent_drl_mid_optimized","agent_drl_mid_optimised"]:
+                kwargs = {"lmap": self.lmap, "real_goal": self.cfg["GOAL"],
+                        "fake_goals": self.cfg["POSS_GOALS"], "map_file": map_name,
+                          "start": self.cfg["START"]}
             else:
                 kwargs = {"mapref": self.lmap,
                           "real_goal": self.cfg["GOAL"],

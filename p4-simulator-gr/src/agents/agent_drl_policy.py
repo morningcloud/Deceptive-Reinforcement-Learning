@@ -17,7 +17,7 @@ DEBUG = False
 RETRAIN = True
 
 class Agent(object):
-    def __init__(self, lmap, real_goal, fake_goals, map_file):
+    def __init__(self, lmap, real_goal, fake_goals, map_file, lamda=1, w=None):
         self.lmap = lmap
         self.real_goal = real_goal
         self.fake_goals = fake_goals
@@ -25,7 +25,7 @@ class Agent(object):
             print self.fake_goals
         real_q_file = Q_DIR + map_file + ".{:d}.{:d}.q".format(real_goal[0], real_goal[1])
 
-        self.real_q = qFunction.QFunction(lmap.width, lmap.height)
+        self.real_q = qFunction.QFunction(lmap.width, lmap.height, w, lamda)
         if not RETRAIN and os.path.isfile(real_q_file):
             if DEBUG:
                 print "loading q function for", real_goal, real_q_file
@@ -36,7 +36,7 @@ class Agent(object):
             if DECEPTIVE:
                 qFunction.train(self.fake_goals,self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
             else:
-                qFunction.train(None,self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
+                qFunction.train(None, self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
             self.real_q.save(real_q_file)
         self.sum_q_diff = [0.0] * (len(fake_goals) + 1)
         self.d_set = set(range(len(fake_goals)))

@@ -1,6 +1,6 @@
 import os.path
 import math
-import qFunction
+import qFunction_org as qFunction
 from collections import Counter
 import random
 
@@ -36,7 +36,7 @@ class Agent(object):
             if DECEPTIVE:
                 qFunction.train(self.fake_goals,self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
             else:
-                qFunction.train(None,self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
+                qFunction.train(self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
             self.real_q.save(real_q_file)
         self.sum_q_diff = [0.0] * (len(fake_goals) + 1)
         self.d_set = set(range(len(fake_goals)))

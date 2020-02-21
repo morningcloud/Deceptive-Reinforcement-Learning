@@ -31,8 +31,8 @@ RANDOM = 1
 
 IRRATIONAL = True
 
-OBS_AGENTS = ["agent_drl_honest", "agent_drl_policy", "agent_drl_mid", "agent_drl_org"]  # agent that generates observations
-#OBS_AGENTS = ["agent_drl_mid"]
+OBS_AGENTS = ["agent_drl_honest", "agent_drl_policy", "agent_drl_mid", "agent_drl_org","agent_drl_mid_optimized","agent_ds4"]  # agent that generates observations
+OBS_AGENTS = ["agent_drl_mid_optimised"]
 #OBS_AGENT = "agent_drl_org"
 # OBS_AGENT = "agent_rta"
 # GR_AGENT = "gr_agent_ramirez"
@@ -125,11 +125,11 @@ class GR(object):
                 # initialize planning agent
                 kwargs = {}
                 agentmod = imp.load_source(OBS_AGENT, './agents/' + OBS_AGENT + '.py')
-                if OBS_AGENT == "agent_rm":
+                if OBS_AGENT in ["agent_rm", "agent_drl_mid_optimized","agent_drl_mid_optimised"]:
                     kwargs = {"lmap": self.model, "real_goal": real_goal,
                               "fake_goals": fake_goals, "map_file": self.map,
                               "start": start}
-                elif OBS_AGENT in ["agent_drl", "agent_drl_org", "agent_drl_mid","agent_drl_policy","agent_drl_honest"]:
+                else: #if OBS_AGENT in ["agent_drl", "agent_drl_org", "agent_drl_mid","agent_drl_policy","agent_drl_honest"]:
                     kwargs = {"lmap": self.model, "real_goal": real_goal,
                               "fake_goals": fake_goals, "map_file": self.map}
                 #else:

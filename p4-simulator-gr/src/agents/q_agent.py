@@ -16,7 +16,7 @@ from collections import Counter
 epsilon = 0.5  # HIGHER => MORE RANDOM / Exploration move
 LEARNING_RATE = 0.1
 FUTURE_DISCOUNT = 0.95
-EPOCS = 24000
+EPOCS = 50000
 START_EPSILON_DECAYING = 1
 END_EPSILON_DECAYING = EPOCS // 2  # stop decaying the epsilon on the last 10% of records
 #END_EPSILON_DECAYING = EPOCS * 0.1  # stop decaying the epsilon on the last 10% of records
@@ -29,9 +29,9 @@ STATS_EVERY = 20
 DEBUGPRINT = False
 
 ENABLE_DECEPTION = False
-#RESUME_TRAINING = False
 RESUME_TRAINING = False
-RESUME_EPOC_FROM = 20000
+#RESUME_TRAINING = True
+RESUME_EPOC_FROM = 0
 
 class Actions:
     NORTH = 0
@@ -88,7 +88,8 @@ class Agent(object):
         self.q_filepath = "qtables/{map_file}-target{self.target_state}-episode{self.epocs}-epsilon{self.init_epsilon}-LR{self.learning_rate}-lambda{self.dec_lambda}-qtable.npy".format(**locals())
 
     def getPossibleActions(self, current_coord):
-        adjacentlist = self.mapref.getAdjacents(current_coord)
+        adjacentlist = [p for p in self.mapref.getAdjacents(current_coord) if
+                        self.mapref.isPassable(p, previous=current_coord)]
         possibleoffsets = [(a[0]-current_coord[0],a[1]-current_coord[1]) for a in adjacentlist]
         possibleactions = [Actions.OFFSETACTION[a] for a in possibleoffsets]
         #if len(possibleactions) < 8:
@@ -126,7 +127,7 @@ class Agent(object):
             else:
                 print("qtable load fail")
 
-        if RESUME_TRAINING or not os.path.isfile(self.q_filepath):
+        if RESUME_TRAINING or not os.path.isfile(q_filepath):
             print("going to train...")
             # Put random reward from -32 to 0, just to push the model learn faster... Is this a good idea??
             self.q_table = np.random.uniform(low=-32, high=0,
@@ -181,6 +182,15 @@ class Agent(object):
         #self.q_table=self.q_table_dic[(44, 41)]
         print("len self.q_table_dic: ",len(self.q_table_dic))
 
+    def getPath(self, mapref, start, goal):
+        path = [start]
+        current = start
+        while current != goal:
+            move = self.getNext(mapref, current, goal)
+            path.append(move)
+            current = move
+        return path
+
     '''returns the next move'''
     def getNext__(self, mapref, current, goal, timeremaining):
         """returns random passable adjacent - agents are self-policing
@@ -211,7 +221,7 @@ class Agent(object):
             return np.random.choice(possible_move)
 
     '''returns the next move'''
-    def getNext(self, mapref, current, goal, timeremaining):
+    def getNext(self, mapref, current, goal, timeremaining=None):
         """returns random passable adjacent - agents are self-policing
         so must check cell passable from current in case of corner-cutting
         or may return invalid coord."""
