@@ -1,6 +1,6 @@
 import os.path
 import math
-import qFunction
+import qFunction_Euclidean as qFunction
 from collections import Counter
 import random
 
@@ -18,6 +18,7 @@ RETRAIN = True
 
 class Agent(object):
     def __init__(self, lmap, real_goal, fake_goals, map_file, lamda=1, w=None):
+        print("lamda",lamda,"w",w)
         self.lmap = lmap
         self.real_goal = real_goal
         self.fake_goals = fake_goals
@@ -34,7 +35,7 @@ class Agent(object):
             if DEBUG:
                 print "training q function for", real_goal, real_q_file
             if DECEPTIVE:
-                qFunction.train(self.fake_goals,self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
+                qFunction.train(self.fake_goals, self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
             else:
                 qFunction.train(None, self.real_q, lmap, real_goal, TERM_V, DISCOUNT_FACTOR)
             self.real_q.save(real_q_file)

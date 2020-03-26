@@ -94,6 +94,7 @@ class HeatMap(object):
         
     def isTruthful(self, node):
         real_costdif = self.costdif(self.goal, node)
+        #print('real_costdif',real_costdif)
         for g in self.goal_obs[1:]:
             if g.coord == node: 
                 return False

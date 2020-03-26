@@ -25,12 +25,12 @@ Check some screenshots of p4:
 
 * Python 2.7
 * python-tk - Tkinter - Writing Tk applications with Python
-* Map in [Movingai](htpp://www.movingai.com) with extensions for cost modeling.
+* Map in [Movingai](http://www.movingai.com) with extensions for cost modeling.
 
 ## Features
 
 * Run from CLI (for benchmarking) or with GUI interface (for visualization and debugging).
-* Compatible with [Movingai](htpp://www.movingai.com) map format with extensions for cost and dynamic changes (see below)
+* Compatible with [Movingai](http://www.movingai.com) map format with extensions for cost and dynamic changes (see below)
 * Dynamic changes to map via map scripts (see below).
 * Deadline specification (agent is terminated at deadline).
 * Report of cost, steps, total and remaining time.

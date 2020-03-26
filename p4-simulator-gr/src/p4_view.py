@@ -280,7 +280,7 @@ class Gui(Tkinter.Tk):
     def saveCanvas(self):
         filename = self.mapName + str(self.start) + str(self.goal) + str(self.possGoals)
         print("Saving Canvas!!")
-        ps = self.vmap.postscript(file=filename+".ps", colormode='color')
+        #ps = self.vmap.postscript(file=filename+".ps", colormode='color')
 
     def searchPause(self):
         """Button listener. Cancels after call to search generator, sets searchToggle"""

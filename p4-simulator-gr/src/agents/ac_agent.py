@@ -440,7 +440,7 @@ class ACAgent(object):
             realdist = self.eucledianD(_state, goal)
             # print(fdist,rdist)
             w = len(fake_goals)
-            target += self.gamma * (self.lamda * (realdist + -w * new_fakedist))
+            target += self.gamma * (self.lamda * (realdist + -w * new_fakedist)) * (1-int(done))
             advantage = target - (critic_value + (self.lamda * (realdist + -w * fakedist)))
         else:
             advantage = target - critic_value

@@ -17,7 +17,8 @@ MAX_GOALS = 4
 #############################
 
 import csv, os, imp, random
-from p4_model import LogicalMap
+import p4_model as m
+#from p4_model import LogicalMap
 from time import clock as timer
 from random import randint
 import deceptor as d
@@ -90,7 +91,7 @@ class DPP(object):
                     possgoals.append((problem_ints[5+i*2], problem_ints[6+i*2]))
                                 
                 if not self.map == map:
-                    model = LogicalMap(MAP_PATH + map)
+                    model = m.LogicalMap(MAP_PATH + map)
                     self.map = map
                     
                 #initialise deceptor

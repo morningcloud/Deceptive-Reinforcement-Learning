@@ -392,6 +392,7 @@ class SimController(object):
                 logging.debug(nextreturn)
                 clockend = timer()
             except:
+                print p4.BadAgentException()
                 raise p4.BadAgentException()
 
             # Only time first step unless operating in 'realtime' mode. If this is realtime, and the step involved no reasoning (took less than FREE_TIME) do not count its time

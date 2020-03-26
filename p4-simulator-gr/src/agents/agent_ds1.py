@@ -14,6 +14,9 @@ Y_POS = 1
 class Agent(object):
     """Simple dpp strategies return path that maximises LDP"""
     def __init__(self, **kwargs):
+        if 'fake_goals' in kwargs:
+            self.setGoals(kwargs['fake_goals'])
+            #print('Fake goal set...')
         pass
             
     def reset(self, **kwargs):
@@ -23,12 +26,35 @@ class Agent(object):
         #Called by controller to pass in poss goals
         self.poss_goals = poss_goals
         
-    def getNext(self, mapref, current, goal, timeremaining):
+    def getNext(self, mapref, current, goal, timeremaining=None):
         #print "received request"
         self.start = current 
         self.real_goal = goal
         self.mapref = mapref
         return next(self.stepgen)
+
+    def getPath(self, mapref, start, goal):
+        print('in get path')
+        path = [start]
+        current = start
+        pathcost = 0
+        while current != goal:
+            previous = current
+            move = self.getNext(mapref, current, goal)
+            path.append(move)
+            current = move
+
+            allkeys = [k for k in mapref.key_and_doors.keys()]
+            cost = mapref.getCost(current, previous, allkeys)
+            #print('cost in getpath ',cost)
+            if not mapref.isAdjacent(current, previous):
+                cost = float('inf')
+                # agent has made illegal move:
+                #print('agent has made illegal move: cost:',cost)
+            if cost == float('inf'):
+                cost = 0
+            pathcost += cost
+        return path, pathcost
 
     def step_gen(self):
         #print "running generator"
@@ -52,7 +78,7 @@ class Agent(object):
 
         return cost1 + cost2, path1[1:] + path2[1:]
         
-
+'''
     def getPath(self, mapref, start, goal):
         path = [start]
         current = start
@@ -61,3 +87,4 @@ class Agent(object):
             path.append(move)
             current = move
         return path
+'''

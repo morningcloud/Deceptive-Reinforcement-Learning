@@ -37,11 +37,11 @@ AGENT_FILE = "agent_drl_policy"
 #MAP_FILE  = "scatter.map"   	#map filename - must be in maps (sister dir to src)
 MAP_FILE  = "arena2.map"   	#map filename - must be in maps (sister dir to src)
 #MAP_FILE  = "clear.map"   	#map filename - must be in maps (sister dir to src)
-
+''
 START = (9,9)	
 GOAL = (23,40)	
-POSS_GOALS = [(45,40),(3,40)]
-
+POSS_GOALS = [(45,40),(3,40),(40,10)]
+''
 START = (36,9)	
 GOAL = (23,40)	
 POSS_GOALS = [(45,40),(3,40)]
@@ -85,17 +85,26 @@ POSS_GOALS = [(5,35),(15,43)]
 #END OF SETUP
 
 '''
+
+MAP_FILE  = "arena2.map"   	#map filename - must be in maps (sister dir to src)
+START = (20,41)
+GOAL = (40,5)
+POSS_GOALS = [(8,5),(32,10)]#,(30,10)]
 '''
 MAP_FILE  = "scatter.map"   	#map filename - must be in maps (sister dir to src)
 START = (42,26)
 GOAL = (5,10)
 POSS_GOALS = [(5,27),(26,37)]
-'''
-MAP_FILE  = "scatter.map"   	#map filename - must be in maps (sister dir to src)
+''
+MAP_FILE  = "clear.map"   	#map filename - must be in maps (sister dir to src)
 START = (42,26)
 GOAL = (5,10)
-POSS_GOALS = [(30,10), (25,37), (5,27)]
-
+POSS_GOALS = [(5,27),(26,37)]#,(30,10)]
+''
+START = (18, 7)
+GOAL = (9, 41)
+POSS_GOALS = [(25, 31), (47, 32)]
+'''
 '''
 MAP_FILE  = "arena2.map"   	#map filename - must be in maps (sister dir to src)
 START     = (20, 41)           #coordinates of start location in (col,row) format
@@ -103,11 +112,11 @@ GOAL      = (40, 5)            #coordinates of goal location in (col,row) format
 POSS_GOALS = [(8, 5), (32,10)] #(40,25)]
 '''
 '''
-MAP_FILE   = "tinyblock.map"   	#map filename - must be in maps (sister dir to src)
+MAP_FILE   = "tinymap.map"   	#map filename - must be in maps (sister dir to src)
 START     = (8, 3)           #coordinates of start location in (col,row) format
-GOAL      = (4, 13)            #coordinates of goal location in (col,row) format
+GOAL      = (4, 9)            #coordinates of goal location in (col,row) format
 #POSS_GOALS = [(4, 4), (4, 8)]
-POSS_GOALS = [(13, 13), (1, 8)]
+POSS_GOALS = [(9, 9), (1, 8)]
 '''
 # MAP_FILE  = "arena3.map"   	#map filename - must be in maps (sister dir to src)
 # START     = (22, 41)           #coordinates of start location in (col,row) format

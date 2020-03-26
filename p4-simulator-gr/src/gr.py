@@ -3,6 +3,7 @@ import imp
 import os
 import random
 from time import clock as timer
+import datetime
 
 from p4_model import LogicalMap
 
@@ -31,8 +32,8 @@ RANDOM = 1
 
 IRRATIONAL = True
 
-OBS_AGENTS = ["agent_drl_honest", "agent_drl_policy", "agent_drl_mid", "agent_drl_org","agent_drl_mid_optimized","agent_ds4"]  # agent that generates observations
-OBS_AGENTS = ["agent_drl_mid_optimised"]
+OBS_AGENTS = ["agent_drl_honest", "agent_drl_policy", "agent_drl_mid", "agent_drl_org","agent_drl_mid_optimized","agent_drl_mid_optimised","agent_ds1","agent_ds2","agent_ds3","agent_ds4"]  # agent that generates observations
+OBS_AGENTS = ["agent_drl_mid"]  # agent that generates observations
 #OBS_AGENT = "agent_drl_org"
 # OBS_AGENT = "agent_rta"
 # GR_AGENT = "gr_agent_ramirez"
@@ -69,7 +70,7 @@ class GR(object):
         self.map = None
         print "Initialised GR."
 
-    def runBatch(self, OBS_AGENT, quality=None, density=None, distribution=None):
+    def runBatch(self, OBS_AGENT, w=None, lamda=1, quality=None, density=None, distribution=None):
         """
         Read problems, generate observed path and run getProbabities()
         Requires agents to exist
@@ -113,6 +114,8 @@ class GR(object):
                     goals.append(GoalObj('goal' + str(i + 1), problem_ints[5 + i * 2], problem_ints[6 + i * 2]))
                     fake_goals.append((problem_ints[5 + i * 2], problem_ints[6 + i * 2]))
                 realgoal = 0
+                print('start',start)
+                print('goal',real_goal)
                 print('fake_goals',fake_goals)
                 print('loading '+MAP_PATH + map + '.map')
                 print('self.map '+str(self.map))
@@ -129,7 +132,12 @@ class GR(object):
                     kwargs = {"lmap": self.model, "real_goal": real_goal,
                               "fake_goals": fake_goals, "map_file": self.map,
                               "start": start}
-                else: #if OBS_AGENT in ["agent_drl", "agent_drl_org", "agent_drl_mid","agent_drl_policy","agent_drl_honest"]:
+                elif OBS_AGENT == "agent_drl_policy":
+                    print(OBS_AGENT, 'with ', {"lamda": lamda, "w": w})
+                    kwargs = {"lmap": self.model, "real_goal": real_goal,
+                              "fake_goals": fake_goals, "map_file": self.map,
+                              "lamda": lamda, "w": w}
+                else:  # OBS_AGENT in["agent_drl","agent_drl_org","agent_drl_mid","agent_drl_policy","agent_drl_honest"]
                     kwargs = {"lmap": self.model, "real_goal": real_goal,
                               "fake_goals": fake_goals, "map_file": self.map}
                 #else:
@@ -148,25 +156,25 @@ class GR(object):
                 for density in densities:
                     for distribution in distributions:
                         pathcost = 0
-                        try:
-                            print('get full path at density',density,'distribution',distribution)
-                            self.obs_agent.reset()
-                            fullpath, pathcost = self.getFullPath(start, goals[realgoal].coord, quality)
-                        except:
-                            fullpath = self.getFullPath(start, goals[realgoal].coord, quality)
-                            print('not considering cost')
+                        #try:
+                            #print('get full path at density',density,'distribution',distribution)
+                        self.obs_agent.reset()
+                        fullpath, pathcost = self.getFullPath(start, goals[realgoal].coord, quality)
+                        #except:
+                        #    fullpath = self.getFullPath(start, goals[realgoal].coord, quality)
+                         #   print('not considering cost')
 
                         obs_set = obs_sets[distribution]
                         #print('obs_set',obs_set)
                         obs = obs_set(fullpath, density)
                         #print (numgoals + 1, len(goals),"distribution",distribution)
                         for formula in formulas:
-                            print "using formula " + str(formula)
+                            #print "using formula " + str(formula)
                             self.gr_agent.setCostDif(formula)
                             try:
                                 with Timeout(TIME_OUT):
                                     clockstart = timer()  # start timer - getting results for all 3 goals
-                                    print('getting probs...')
+                                    #print('getting probs...')
                                     goal_results = self.gr_agent.getProbs(self.model, start, goals,
                                                                           obs)  # populate goals
                                     #print('goal_results',goal_results)
@@ -177,7 +185,12 @@ class GR(object):
                                 clockend = clockstart + 180
                                 for goal in goal_results:
                                     goal.setTime("TIMED OUT")
-                            writearray = [map, OBS_AGENT, start, optcost,  # "D_" +
+                            if OBS_AGENT == "agent_drl_policy":
+                                agent_name = OBS_AGENT+"-lamda:"+str(lamda)+ "-w:"+str(w)
+                                writearray = [map, agent_name, start, optcost,  # "D_" +
+                                          str(density), ("P", "R")[distribution], formula]
+                            else:
+                                writearray = [map, OBS_AGENT, start, optcost,  # "D_" +
                                           str(density), ("P", "R")[distribution], formula]
                             count = 0
                             # print numgoals + 1, len(goal_results)
@@ -194,7 +207,10 @@ class GR(object):
         print "Results written to " + self.outfile
 
     def getFullPath(self, start, goal, weight):
+        #print('in gr get full path')
         self.obs_agent.reset()
+        #print('in reset')
+        #print(self.model, start, goal)
         # try:
         #     self.obs_agent.setWeight(weight)
         # except:
@@ -274,8 +290,19 @@ class GoalObj(object):
 
 
 if __name__ == '__main__':
-    recog = GR( "../maps/gr/sample_dpp2.GR", "../maps/gr/sample_dpp_twofake.csv")
+    recog = GR( "../maps/gr/sample_dpp2.GR", "../maps/gr/dpp_comparison_ds_new.csv")
     #recog = GR("../drl/computational/drl.GR", "../drl/computational/drl.csv")
     # recog.runBatch(GREEDY, SPARSE, PREFIX)
+    lambdaarr = [0.1, 0.3, 1, 1.5]
+    warr = [2, 3, 4, 5]
     for agent in OBS_AGENTS:
-        recog.runBatch(agent)
+        start = datetime.datetime.now()
+        if False: #agent == "agent_drl_policy":
+            for l in lambdaarr:
+                for w in warr:
+                    start = datetime.datetime.now()
+                    recog.runBatch(agent, w=w, lamda=l)
+                    print("Agent Run Duration: ", datetime.datetime.now()-start)
+        else:
+            recog.runBatch(agent)
+            print("Agent Run Duration: ", datetime.datetime.now()-start)
